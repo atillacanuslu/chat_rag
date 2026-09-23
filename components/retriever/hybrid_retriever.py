@@ -38,6 +38,7 @@ class HybridRetriever(BaseRetriever):
         self.bm25_index = None
         self.chunks_list = []
         self.logger = get_logger("HybridRetriever")
+        self.last_stats = {}
     
     def ensure_bm25_index(self) -> None:
         """Ensure BM25 index exists; build from vector DB if missing."""
@@ -117,7 +118,13 @@ class HybridRetriever(BaseRetriever):
                 retrieval_results.append(
                     RetrievalResult(chunk, score, 'vector', i)
                 )
-            
+            scores_only = [r.score for r in retrieval_results]
+            self.last_stats['vector'] = {
+                'n': len(scores_only),
+                'min': min(scores_only) if scores_only else None,
+                'max': max(scores_only) if scores_only else None,
+                'scores': [round(s, 4) for s in scores_only],
+            }
             return retrieval_results
         except Exception as e:
             raise RetrieverException(f"Vector search failed: {e}")
@@ -166,7 +173,15 @@ class HybridRetriever(BaseRetriever):
                     )
             except Exception:
                 pass
-            
+
+            scores_only = [r.score for r in retrieval_results]
+            self.last_stats['bm25'] = {
+                'n': len(scores_only),
+                'min': min(scores_only) if scores_only else None,
+                'max': max(scores_only) if scores_only else None,
+                'zero_count': sum(1 for s in scores_only if s == 0),
+                'scores': [round(s, 4) for s in scores_only],
+            }
             return retrieval_results
         except Exception as e:
             raise RetrieverException(f"Keyword search failed: {e}")
@@ -271,7 +286,16 @@ class HybridRetriever(BaseRetriever):
             for result in keyword_results:
                 setattr(result, 'root_method', 'bm25')
 
+            fused = [r.score for r in top_candidates]
+            self.last_stats['hybrid'] = {
+                'n': len(fused),
+                'min': min(fused) if fused else None,
+                'max': max(fused) if fused else None,
+                'scores': [round(s, 4) for s in fused],
+                'sources': [getattr(r, 'root_method', '') for r in top_candidates],
+            }
             return top_candidates
         except Exception as e:
             raise RetrieverException(f"Hybrid search failed: {e}")
+        
 

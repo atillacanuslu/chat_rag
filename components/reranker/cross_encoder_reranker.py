@@ -39,10 +39,15 @@ class CrossEncoderReranker(BaseReranker):
         
         try:
             # Default to CPU to avoid OMP conflicts
-            device = device or 'cpu'
+            #device = device or 'cpu'
             self.model = CrossEncoder(model_name, device=device)
+            try:
+                self.model.model.float()
+            except Exception:
+                pass 
         except Exception as e:
             raise RAGException(f"Failed to load cross-encoder model {model_name}: {e}")
+        self.last_stats = {}
     
     def rerank(
         self,
@@ -78,7 +83,16 @@ class CrossEncoderReranker(BaseReranker):
             
             # Get relevance scores from cross-encoder
             scores = self.model.predict(pairs)
-            
+            import numpy as _np
+            _arr = _np.asarray(scores, dtype=float)
+            self.last_stats = {
+                'n': len(pairs),
+                'raw_min': None if _np.isnan(_arr).all() else float(_np.nanmin(_arr)),
+                'raw_max': None if _np.isnan(_arr).all() else float(_np.nanmax(_arr)),
+                'raw_scores': [None if _np.isnan(v) else round(float(v), 4) for v in _arr],
+                'nan_count': int(_np.isnan(_arr).sum()),
+                'empty_chunks': sum(1 for p in pairs if not p[1].strip()),
+            }
             # Normalize scores to [0,1] to avoid negative/scale issues
             import numpy as _np
             scores_np = _np.array(scores, dtype=float).reshape(-1)

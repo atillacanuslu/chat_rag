@@ -391,7 +391,7 @@ Response:"""
             ]
             
             RAGLogger.log_llm_request(self.logger, messages, 0.6, 500)
-            response = self.llm_model.generate(messages, temperature=0.6, max_tokens=500, format='json')
+            response = self.llm_model.generate(messages, temperature=0.0, max_tokens=500, format='json')
             RAGLogger.log_llm_response(self.logger, response, success=True)
             
             # Validate response

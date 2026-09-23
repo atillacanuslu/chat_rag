@@ -617,7 +617,10 @@ class RAGPipeline:
                 print(f"Top Score: {final_results[0].score:.4f}")
                 print(f"Top Result: {final_results[0].chunk.doc_title} - {final_results[0].chunk.section_title}")
             print(f"{'='*80}\n")
-            
+            metadata['stage_stats'] = {
+                'retriever': getattr(self.hybrid_retriever, 'last_stats', {}),
+                'reranker': getattr(self.reranker, 'last_stats', {}),
+            }
             return final_results, metadata
             
         except Exception as e:
@@ -937,6 +940,8 @@ Please provide a clear and accurate answer based on the context provided above."
             use_reranking=use_reranking,
             retrieval_method=retrieval_method
         )
+        metadata['final_results'] = retrieval_results
+        metadata['final_contents'] = [r.chunk.content for r in retrieval_results]
         
         logger.info(f"Retrieved {len(retrieval_results)} documents")
         

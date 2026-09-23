@@ -1,0 +1,32 @@
+{"id": "q01", "question": "KKB ne zaman kuruldu?", "answer": "11 Nisan 1995", "evidence": "11 Nisan 1995 tarihinde", "type": "factual"}
+{"id": "q02", "question": "Findeks bireysel üye sayısı kaçtır?", "answer": "578.278", "evidence": "578.278", "type": "number"}
+{"id": "q03", "question": "31 Aralık 2024 itibarıyla KKB'nin kaç banka üyesi vardır?", "answer": "64", "evidence": "64 banka", "type": "number"}
+{"id": "q04", "question": "KKB çalışanlarının yaş ortalaması nedir?", "answer": "35,65", "evidence": "Yaş Ortalaması 35,65", "type": "number"}
+{"id": "q05", "question": "Ortaklık Yapısı bölümüne göre KKB kaç bankanın ortaklığında kurulmuştur?", "answer": "11", "evidence": "11 bankanın ortaklığında kurulmuştur", "type": "factual"}
+{"id": "q06", "question": "KKB'nin kaç hissedarı bulunmaktadır?", "answer": "9", "evidence": "halen 9 hissedarı bulunmaktadır", "type": "factual"}
+{"id": "q07", "question": "KKB'nin toplam üye sayısı kaçtır?", "answer": "197", "evidence": "Toplam Üye Sayısı 197", "type": "number"}
+{"id": "q08", "question": "KKB'nin genel müdürü kimdir?", "answer": "Gökhan Şahin", "evidence": "Gökhan Şahin Kredi Kayıt Bürosu", "type": "factual"}
+{"id": "q09", "question": "KKB Yönetim Kurulu Başkanı kimdir?", "answer": "Olgun Tufan Kurbanoğlu", "evidence": "Olgun Tufan Kurbanoğlu Kredi Kayıt Bürosu", "type": "factual"}
+{"id": "q10", "question": "KKB'nin 2024 net dönem kârı ne kadardır?", "answer": "736.116.819", "evidence": "Dönem net karı 736.116.819", "type": "number"}
+{"id": "q11", "question": "KKB'nin 2024 hasılatı ne kadardır?", "answer": "3.543.163.259", "evidence": "Hasılat 18 3.543.163.259", "type": "number"}
+{"id": "q12", "question": "KKB 2024 sonu itibarıyla kaç ürün ve hizmet sunmaktadır?", "answer": "95", "evidence": "95 ürün ve", "type": "number"}
+{"id": "q13", "question": "2024 yılında KRS sorgulama sayısı kaçtır?", "answer": "1.650", "evidence": "KRS Sorgulama Sayısı 631", "type": "number"}
+{"id": "q14", "question": "Greendeks nedir?", "answer": "sürdürülebilirlik endeksi", "evidence": "Greendeks ile sunulan sürdürülebilirlik endeksi", "type": "factual"}
+{"id": "q15", "question": "Karekodlu Çek Sistemi ne zaman yürürlüğe girdi?", "answer": "1 Ocak 2017", "evidence": "1 Ocak 2017 itibarıyla yürürlüğe", "type": "factual"}
+{"id": "q16", "question": "Çek Raporu ve Risk Raporu ne zaman hizmete sunuldu?", "answer": "Ocak 2013", "evidence": "Ocak 2013 tarihinde hizmete sunduğu Çek Raporu", "type": "factual"}
+{"id": "q17", "question": "KKB Anadolu Veri Merkezi ne zaman faaliyete başladı?", "answer": "2016 yılı Aralık ayında", "evidence": "2016 yılı Aralık ayında faaliyete başlayan", "type": "factual"}
+{"id": "q18", "question": "2024 yılında KKB Ana Veri Merkezi nereye taşındı?", "answer": "Ankara, Anadolu Veri Merkezi", "evidence": "KKB Ana Veri Merkezi", "type": "factual"}
+{"id": "q19", "question": "KKB Gönüllüleri'nin yaş ortalaması kaçtır?", "answer": "33", "evidence": "Gönüllüleri Profili Yaş Ortalaması", "type": "number"}
+{"id": "q20", "question": "Genç Yetenek Programı kapsamında 2024'te kaç yeni personel işe alındı?", "answer": "19", "evidence": "19 yeni personel", "type": "number"}
+{"id": "q21", "question": "KKB hangi kuruluştan En İyi İşverenler ödülü aldı?", "answer": "Great Place to Work", "evidence": "Great Place to Work", "type": "factual"}
+{"id": "q22", "question": "Kredi Referans Sistemi ne zaman hayata geçirildi?", "answer": "1999", "evidence": "Nisan ayında Kredi Referans Sistemi", "type": "factual"}
+{"id": "q23", "question": "KKB'nin ödenmiş sermayesi ne kadardır?", "answer": "7.425.000", "evidence": "Ödenmiş sermaye 17 7.425.000", "type": "number"}
+{"id": "q24", "question": "2024 yılında bireysel kredi notu sayısı kaçtır?", "answer": "1.513", "evidence": "Bireysel Kredi Notu Sayısı 528", "type": "number"}
+{"id": "q25", "question": "KKB kaç Risk Merkezi üyesine hizmet vermektedir?", "answer": "197", "evidence": "197 Risk Merkezi", "type": "number"}
+{"id": "q26", "question": "KKB hangi sektörlere hizmet veriyor ve hangi ürünleri sunuyor?", "answer": "kredi bilgi paylaşımı, risk yönetimi", "evidence": "kredi bilgi paylaşımı, risk yönetimi", "type": "list"}
+{"id": "q27", "question": "When was KKB founded?", "answer": "11 Nisan 1995", "evidence": "11 Nisan 1995 tarihinde", "type": "cross_language"}
+{"id": "q28", "question": "Who is the CEO of KKB?", "answer": "Gökhan Şahin", "evidence": "Gökhan Şahin Kredi Kayıt Bürosu", "type": "cross_language"}
+{"id": "q29", "question": "What is the average age of KKB employees?", "answer": "35,65", "evidence": "Yaş Ortalaması 35,65", "type": "cross_language"}
+{"id": "q30", "question": "KKB'nin kuruluşundan 2024 sonuna kadar kaç yıl geçmiştir?", "answer": "30", "evidence": "Hizmet hayatımızın 30", "type": "multi_hop"}
+{"id": "q31", "question": "KKB'nin 2024 yılı kripto para yatırımı ne kadardır?", "answer": "CEVAP YOK", "evidence": "", "type": "no_answer"}
+{"id": "q32", "question": "KKB'nin Almanya'daki şube sayısı kaçtır?", "answer": "CEVAP YOK", "evidence": "", "type": "no_answer"}

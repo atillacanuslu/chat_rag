@@ -38,6 +38,10 @@ class OllamaLLM(BaseLLM):
         
         # Verify connection to Ollama
         self._verify_connection()
+
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.call_count = 0
     
     def _verify_connection(self):
         """Verify connection to Ollama server"""
@@ -101,6 +105,9 @@ class OllamaLLM(BaseLLM):
             
             # Log successful response
             RAGLogger.log_llm_response(logger, generated_text, success=True)
+            self.total_prompt_tokens += int(resp.get('prompt_eval_count', 0) or 0)
+            self.total_completion_tokens += int(resp.get('eval_count', 0) or 0)
+            self.call_count += 1
             
             return generated_text
             
@@ -165,3 +172,15 @@ class OllamaLLM(BaseLLM):
             print(f"Warning: Could not list models: {e}")
             return []
 
+
+    def reset_usage(self):
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.call_count = 0
+
+    def get_usage(self):
+        return {
+            'prompt_tokens': self.total_prompt_tokens,
+            'completion_tokens': self.total_completion_tokens,
+            'call_count': self.call_count,
+        }
