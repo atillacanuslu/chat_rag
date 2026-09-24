@@ -36,6 +36,8 @@ def summarize(rows):
     times = [t for t in times if t is not None]
     ptok = [num(r.get("prompt_tokens")) for r in rows]
     ptok = [t for t in ptok if t is not None]
+    ctok = [num(r.get("completion_tokens")) for r in rows]
+    ctok = [t for t in ctok if t is not None]
     nan = [r for r in rows if num(r.get("rerank_nan_count"))]
     zeros = [num(r.get("bm25_zero_count")) for r in rows]
     zeros = [z for z in zeros if z is not None]
@@ -56,6 +58,12 @@ def summarize(rows):
         "median_latency": statistics.median(times) if times else None,
         "p90_latency": sorted(times)[int(len(times) * 0.9) - 1] if times else None,
         "median_prompt_tokens": statistics.median(ptok) if ptok else None,
+        "mean_prompt_tokens": (sum(ptok) / len(ptok)) if ptok else None,
+        "total_prompt_tokens": sum(ptok) if ptok else None,
+        "median_completion_tokens": statistics.median(ctok) if ctok else None,
+        "total_completion_tokens": sum(ctok) if ctok else None,
+        "total_tokens": (sum(ptok) + sum(ctok)) if (ptok or ctok) else None,
+        "total_time": sum(times) if times else None,
         "llm_calls": rows[0].get("llm_calls", "") if rows else "",
         "vector_spread": spread("vec_spread"),
         "bm25_spread": spread("bm25_spread"),
@@ -74,7 +82,13 @@ LABELS = [
     ("nan_queries", "queries with NaN rerank (%)", "{:.1f}"),
     ("median_latency", "median latency (s)", "{:.1f}"),
     ("p90_latency", "p90 latency (s)", "{:.1f}"),
+    ("total_time", "total run time (s)", "{:.0f}"),
     ("median_prompt_tokens", "median input tokens", "{:.0f}"),
+    ("mean_prompt_tokens", "mean input tokens", "{:.0f}"),
+    ("total_prompt_tokens", "TOTAL input tokens", "{:.0f}"),
+    ("median_completion_tokens", "median output tokens", "{:.0f}"),
+    ("total_completion_tokens", "TOTAL output tokens", "{:.0f}"),
+    ("total_tokens", "TOTAL tokens (in + out)", "{:.0f}"),
     ("llm_calls", "LLM calls per question", "{}"),
     ("vector_spread", "vector score spread", "{:.4f}"),
     ("bm25_spread", "bm25 score spread", "{:.4f}"),

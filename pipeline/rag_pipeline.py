@@ -151,14 +151,20 @@ class RAGPipeline:
                     use_semantic_segmentation=use_semantic_segmentation,
                     use_embedding_segmentation=use_embedding_segmentation,
                     semantic_threshold=semantic_threshold,
-                    semantic_window=semantic_window
+                    semantic_window=semantic_window,
+                    max_tokens=chunker_params.get('max_tokens', getattr(self.settings, "max_chunk_tokens", None)),
+                    token_overlap=chunker_params.get('token_overlap', getattr(self.settings, "chunk_token_overlap", None)),
+                    next_context_chars=getattr(self.settings, "next_context_chars", 140)
                 )
         
         # Default to settings-based chunker
         return SemanticChunker(
             chunk_size=self.settings.chunk_size,
             chunk_overlap=self.settings.chunk_overlap,
-            min_chunk_size=self.settings.min_chunk_size
+            min_chunk_size=self.settings.min_chunk_size,
+            max_tokens=getattr(self.settings, "max_chunk_tokens", None),
+            token_overlap=getattr(self.settings, "chunk_token_overlap", None),
+            next_context_chars=getattr(self.settings, "next_context_chars", 140)
         )
     
     def _create_reranker(self) -> BaseReranker:
@@ -357,13 +363,18 @@ class RAGPipeline:
             # Step 3: Generate embeddings
             print("  - Generating embeddings...")
             embeddings = []
+
+            tokenizer = getattr(getattr(self.embedding_model, "model", None), "tokenizer", None)
+            if tokenizer is not None:
+                self.contextual_enhancer.set_tokenizer(tokenizer)
+
             
             for chunk in chunks:
                 # Create contextual representation for embedding
                 contextual_text = self.contextual_enhancer.enrich_chunk_with_context(chunk)
                 
                 # Generate embedding
-                embedding = self.embedding_model.encode(contextual_text, convert_to_tensor=False)
+                embedding = self.embedding_model.encode(contextual_text, convert_to_tensor=False, prefix="passage: ")
                 chunk.embedding = embedding
                 embeddings.append(embedding.tolist())
                 
@@ -376,7 +387,7 @@ class RAGPipeline:
             if chunks and embeddings:  # Only store if we have chunks and embeddings
                 self.vector_db.add_chunks(chunks, embeddings)
             else:
-                print(f"  ⚠️  Warning: No chunks to store")
+                print(f"  Warning: No chunks to store")
                 return []
             
             # Step 5: Update BM25 index

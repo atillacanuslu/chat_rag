@@ -80,7 +80,7 @@ class HybridRetriever(BaseRetriever):
             self.logger.debug(
                 f"VECTOR SEARCH start | query='{query[:80]}' top_k={top_k} total_embeddings={total_embeddings}"
             )
-            query_embedding = self.embedding_model.encode(query, convert_to_tensor=False)
+            query_embedding = self.embedding_model.encode(query, convert_to_tensor=False, prefix="query: ")
             # L2-normalize query embedding for cosine search stability
             try:
                 import numpy as _np

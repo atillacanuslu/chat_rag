@@ -45,6 +45,9 @@ class Settings:
         self.chunk_size = int(os.getenv("CHUNK_SIZE", "300"))
         self.chunk_overlap = int(os.getenv("CHUNK_OVERLAP", "60"))
         self.min_chunk_size = int(os.getenv("MIN_CHUNK_SIZE", "50"))
+        self.max_chunk_tokens = int(os.getenv("MAX_CHUNK_TOKENS", "370"))
+        self.chunk_token_overlap = int(os.getenv("CHUNK_TOKEN_OVERLAP", "80"))
+        self.next_context_chars = int(os.getenv("NEXT_CONTEXT_CHARS", "140"))
         
         # Retrieval Settings
         self.default_top_k = int(os.getenv("DEFAULT_TOP_K", "5"))

@@ -1,8 +1,8 @@
 {"id": "q01", "question": "KKB ne zaman kuruldu?", "answer": "11 Nisan 1995", "evidence": "11 Nisan 1995 tarihinde", "type": "factual"}
-{"id": "q02", "question": "Findeks bireysel üye sayısı kaçtır?", "answer": "578.278", "evidence": "578.278", "type": "number"}
+{"id": "q02", "question": "Findeks kaç üyeye sahip?", "answer": "8 milyon", "evidence": "8 milyon üyesiyle 10", "type": "number"}
 {"id": "q03", "question": "31 Aralık 2024 itibarıyla KKB'nin kaç banka üyesi vardır?", "answer": "64", "evidence": "64 banka", "type": "number"}
 {"id": "q04", "question": "KKB çalışanlarının yaş ortalaması nedir?", "answer": "35,65", "evidence": "Yaş Ortalaması 35,65", "type": "number"}
-{"id": "q05", "question": "Ortaklık Yapısı bölümüne göre KKB kaç bankanın ortaklığında kurulmuştur?", "answer": "11", "evidence": "11 bankanın ortaklığında kurulmuştur", "type": "factual"}
+{"id": "q05", "question": "KKB'yi kaç banka kurdu?", "answer": "11", "evidence": "11 bankanın ortaklığında kurulmuştur", "type": "factual"}
 {"id": "q06", "question": "KKB'nin kaç hissedarı bulunmaktadır?", "answer": "9", "evidence": "halen 9 hissedarı bulunmaktadır", "type": "factual"}
 {"id": "q07", "question": "KKB'nin toplam üye sayısı kaçtır?", "answer": "197", "evidence": "Toplam Üye Sayısı 197", "type": "number"}
 {"id": "q08", "question": "KKB'nin genel müdürü kimdir?", "answer": "Gökhan Şahin", "evidence": "Gökhan Şahin Kredi Kayıt Bürosu", "type": "factual"}

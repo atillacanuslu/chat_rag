@@ -41,11 +41,14 @@ class SentenceTransformerEmbedding(BaseEmbedding):
         self,
         texts: Union[str, List[str]],
         convert_to_tensor: bool = False,
+        prefix: str = None,
         **kwargs
     ) -> Union[np.ndarray, List[np.ndarray]]:
         """Encode text(s) to embedding(s)"""
         try:
             # Disable multiprocessing and use single-threaded encoding to avoid OMP conflicts
+            if prefix and "e5" in self.model_name.lower():
+                texts = [prefix + t for t in texts] if isinstance(texts, list) else prefix + texts
             embeddings = self.model.encode(
                 texts,
                 convert_to_tensor=convert_to_tensor,

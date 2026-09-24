@@ -34,7 +34,11 @@ class SemanticChunker(BaseChunker):
         use_semantic_segmentation: bool = True,
         use_embedding_segmentation: bool = False,
         semantic_threshold: float = 0.6,
-        semantic_window: int = 1
+        semantic_window: int = 1,
+        max_tokens: int = None,
+        token_overlap: int = None,
+        next_context_chars: int = 140
+
     ):
         """
         Initialize semantic chunker
@@ -55,6 +59,14 @@ class SemanticChunker(BaseChunker):
         self.use_embedding_segmentation = use_embedding_segmentation
         self.semantic_threshold = semantic_threshold
         self.semantic_window = semantic_window
+
+        self.max_tokens = max_tokens
+        self.token_overlap = (
+            token_overlap if token_overlap is not None
+            else (max_tokens // 5 if max_tokens else None)
+        )
+        self.next_context_chars = next_context_chars
+        self._tokenizer = None
     
     def chunk_text(
         self,
@@ -69,8 +81,18 @@ class SemanticChunker(BaseChunker):
             from components.document_processor import DocumentProcessor
             
             processor = DocumentProcessor()
-            sections = processor.extract_sections(text)
             
+            if self.max_tokens and self._tokenizer is None:
+                embedding_model = kwargs.get('embedding_model')
+                if embedding_model is not None:
+                    self._tokenizer = getattr(
+                        getattr(embedding_model, "model", None), "tokenizer", None
+                    )
+                if self._tokenizer is None:
+                    print("No tokenizer available; falling back to word based chunk sizing")
+
+            sections = processor.extract_sections(text)
+
             all_chunks = []
             chunk_counter = 0
             
@@ -113,8 +135,13 @@ class SemanticChunker(BaseChunker):
             
             for i, chunk_data in enumerate(all_chunks):
                 # Get surrounding context
-                prev_context = all_chunks[i-1]['content'][:200] if i > 0 else None
-                next_context = all_chunks[i+1]['content'][:200] if i < total_chunks - 1 else None
+                #prev_context = all_chunks[i-1]['content'][:200] if i > 0 else None
+                #next_context = all_chunks[i+1]['content'][:200] if i < total_chunks - 1 else None
+                prev_context = None
+                next_context = (
+                    all_chunks[i+1]['content'][:self.next_context_chars]
+                    if i < total_chunks - 1 else None
+                )
 
                 # Build header and prepend to content to improve retrieval
                 section = chunk_data['section'] or 'Main Content'
@@ -156,51 +183,52 @@ class SemanticChunker(BaseChunker):
         """Chunk text by sentences while respecting semantic boundaries"""
         sentences = sent_tokenize(text)
         chunks = []
-        current_chunk = []
-        current_length = 0
+        #current_chunk = []
+        #current_length = 0
+        use_tokens = self.max_tokens is not None and self._tokenizer is not None
+        limit = self.max_tokens if use_tokens else self.chunk_size
+        overlap_limit = self.token_overlap if use_tokens else self.chunk_overlap
+
+        current, current_len = [], 0
         
-        for i, sentence in enumerate(sentences):
-            sentence_length = len(sentence.split())
-            
-            # If adding this sentence exceeds chunk size
-            if current_length + sentence_length > self.chunk_size and current_chunk:
-                chunk_text = ' '.join(current_chunk)
-                if len(chunk_text.split()) >= self.min_chunk_size:
-                    chunks.append({
-                        'content': chunk_text,
-                        'section': section_title,
-                        'sentence_start': i - len(current_chunk),
-                        'sentence_end': i
-                    })
-                
-                # Keep overlap
-                overlap_sentences = []
-                overlap_length = 0
-                for sent in reversed(current_chunk):
-                    sent_len = len(sent.split())
-                    if overlap_length + sent_len <= self.chunk_overlap:
-                        overlap_sentences.insert(0, sent)
-                        overlap_length += sent_len
+        for sentence in sentences:
+            s_len = self._count(sentence)
+
+            # one sentence longer than the whole budget
+            if s_len > limit:
+                if current:
+                    chunks.append({'content': ' '.join(current), 'section': section_title})
+                    current, current_len = [], 0
+                for piece in self._split_oversized(sentence, limit):
+                    chunks.append({'content': piece, 'section': section_title})
+                continue
+
+            if current_len + s_len > limit and current:
+                chunks.append({'content': ' '.join(current), 'section': section_title})
+
+                # overlap: walk back from the end, keep whole sentences
+                overlap, o_len = [], 0
+                for s in reversed(current):
+                    l = self._count(s)
+                    if o_len + l <= overlap_limit:
+                        overlap.insert(0, s)
+                        o_len += l
                     else:
                         break
-                
-                current_chunk = overlap_sentences
-                current_length = overlap_length
-            
-            current_chunk.append(sentence)
-            current_length += sentence_length
-        
-        # Add final chunk
-        if current_chunk:
-            chunk_text = ' '.join(current_chunk)
-            if len(chunk_text.split()) >= self.min_chunk_size:
-                chunks.append({
-                    'content': chunk_text,
-                    'section': section_title,
-                    'sentence_start': len(sentences) - len(current_chunk),
-                    'sentence_end': len(sentences)
-                })
-        
+                current, current_len = overlap, o_len
+
+            current.append(sentence)
+            current_len += s_len
+
+        # final leftover: keep it, or merge it into the previous chunk.
+        # Never discard content.
+        if current:
+            tail = ' '.join(current)
+            if self._count(tail) >= self.min_chunk_size or not chunks:
+                chunks.append({'content': tail, 'section': section_title})
+            else:
+                chunks[-1]['content'] = chunks[-1]['content'] + ' ' + tail
+
         return chunks
 
     def _semantic_segment(self, text: str) -> List[str]:
@@ -310,3 +338,40 @@ class SemanticChunker(BaseChunker):
             'min_chunk_size': self.min_chunk_size
         }
 
+    def _count(self, text: str) -> int:
+        """Length of text in the embedding model's tokens, or words as a fallback."""
+        if self._tokenizer is not None:
+            return len(self._tokenizer(text, add_special_tokens=False)["input_ids"])
+        return len(text.split())
+
+    def _split_oversized(self, sentence: str, limit: int) -> List[str]:
+        """Split a single sentence that is longer than the whole budget.
+
+        PDF tables and long lists arrive as one huge 'sentence' because there
+        is no full stop, and those are exactly the places the hardest facts
+        live. Without this they become one oversized chunk that the embedding
+        model then truncates silently.
+        """
+        pieces, current = [], []
+        for part in sentence.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            candidate = ", ".join(current + [part])
+            if current and self._count(candidate) > limit:
+                pieces.append(", ".join(current))
+                current = [part]
+            else:
+                current.append(part)
+        if current:
+            pieces.append(", ".join(current))
+
+        out = []
+        for p in pieces:
+            if self._count(p) <= limit:
+                out.append(p)
+            else:
+                words = p.split()
+                step = max(1, int(len(words) * limit / max(1, self._count(p))))
+                out.extend(" ".join(words[i:i + step]) for i in range(0, len(words), step))
+        return out
