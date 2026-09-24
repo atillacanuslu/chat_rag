@@ -34,5 +34,29 @@
     "vector_db_path": null,
     "retrieval_method": "hybrid",
     "extra": {}
+  },
+  "bb697b96": {
+    "name": "KB_Token",
+    "chunker": {
+      "type": "SemanticChunker",
+      "params": {}
+    },
+    "embedding_model_name": "all-MiniLM-L6-v2",
+    "vector_db_provider": "chroma",
+    "vector_db_path": null,
+    "retrieval_method": "hybrid",
+    "extra": {}
+  },
+  "64ef6121": {
+    "name": "KB_NEW_EMBED",
+    "chunker": {
+      "type": "SemanticChunker",
+      "params": {}
+    },
+    "embedding_model_name": "intfloat/multilingual-e5-small",
+    "vector_db_provider": "chroma",
+    "vector_db_path": null,
+    "retrieval_method": "hybrid",
+    "extra": {}
   }
 }

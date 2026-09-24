@@ -694,6 +694,7 @@ def get_kb_options():
             {'name': 'all-MiniLM-L12-v2', 'dimension': 384, 'description': 'Better quality, English'},
             {'name': 'multi-qa-MiniLM-L6-cos-v1', 'dimension': 384, 'description': 'Optimized for Q&A'},
             {'name': 'paraphrase-multilingual-MiniLM-L12-v2', 'dimension': 384, 'description': 'Multilingual'},
+            {'name': 'intfloat/multilingual-e5-small', 'dimension': 384, 'description': 'Multilingual, 512 token limit'}
         ]
 
         vector_db_providers = [
