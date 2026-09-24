@@ -267,14 +267,22 @@ class HybridRetriever(BaseRetriever):
                 pool = [r for r in sorted_results if has_source(r, pool_src) and r.chunk.chunk_id not in existing_ids]
                 to_add = max(0, need_n)
                 idx = 0
-                while to_add > 0 and idx < len(pool) and top_candidates:
-                    replacement_target = top_candidates[-1]
-                    top_candidates[-1] = pool[idx]
+                # replace the weakest entries, walking backwards from the end.
+                # this used to write to top_candidates[-1] on every pass, so each
+                # injection overwrote the previous one: asking for 3 gave 1, and
+                # the third best rather than the best.
+                slot = len(top_candidates) - 1
+                while to_add > 0 and idx < len(pool) and slot >= 0:
+                    replacement_target = top_candidates[slot]
+                    top_candidates[slot] = pool[idx]
                     self.logger.debug(
-                        f"HYBRID inclusion: injecting {pool_src} id={pool[idx].chunk.chunk_id} score={pool[idx].score:.4f} replacing id={replacement_target.chunk.chunk_id}"
+                        f"HYBRID inclusion: injecting {pool_src} id={pool[idx].chunk.chunk_id} "
+                        f"score={pool[idx].score:.4f} into slot {slot} "
+                        f"replacing id={replacement_target.chunk.chunk_id}"
                     )
                     to_add -= 1
                     idx += 1
+                    slot -= 1
 
             if include_bm25_results_n > len(current_bm25):
                 inject_from('bm25', include_bm25_results_n - len(current_bm25))
