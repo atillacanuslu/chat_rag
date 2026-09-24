@@ -150,10 +150,22 @@ class HybridRetriever(BaseRetriever):
             
             # Get top-k indices
             top_indices = np.argsort(scores)[-top_k:][::-1]
+
+            # A zero BM25 score means the chunk shares no term with the query, so
+            # it is not a keyword match. Returning it as one gave fusion a real
+            # looking score for a chunk that matched nothing, and made the
+            # normalisation in hybrid_search divide by zero when every score was
+            # zero. Vector search runs independently, so a chunk worth keeping on
+            # semantic grounds is already in its own top-k.
+            kept = [i for i in top_indices if scores[i] > 0]
+            dropped = len(top_indices) - len(kept)
+            if dropped:
+                self.logger.debug(
+                    f"BM25 SEARCH | dropped {dropped} of {len(top_indices)} zero-score results"
+                )
+            top_indices = kept
             
             retrieval_results = []
-            # Always return the best candidates, even if scores are 0
-            # This avoids empty results when the query contains extra/mismatched terms
             for rank, idx in enumerate(top_indices):
                 retrieval_results.append(
                     RetrievalResult(
@@ -164,22 +176,13 @@ class HybridRetriever(BaseRetriever):
                     )
                 )
 
-            # Log when all scores are zero to aid debugging
-            try:
-                import numpy as _np
-                if _np.all(_np.array(scores)[top_indices] == 0):
-                    self.logger.debug(
-                        f"BM25 SEARCH note | All top-{top_k} scores are 0. Returning best candidates regardless."
-                    )
-            except Exception:
-                pass
 
             scores_only = [r.score for r in retrieval_results]
             self.last_stats['bm25'] = {
                 'n': len(scores_only),
                 'min': min(scores_only) if scores_only else None,
                 'max': max(scores_only) if scores_only else None,
-                'zero_count': sum(1 for s in scores_only if s == 0),
+                'zero_count': dropped,
                 'scores': [round(s, 4) for s in scores_only],
             }
             return retrieval_results
@@ -221,8 +224,13 @@ class HybridRetriever(BaseRetriever):
             
             if keyword_results:
                 max_keyword = max(r.score for r in keyword_results)
-                for r in keyword_results:
-                    r.score = (r.score / max_keyword) * keyword_weight
+                if max_keyword > 0:
+                    for r in keyword_results:
+                        r.score = (r.score / max_keyword) * keyword_weight
+                else:
+                    # unreachable once zero-score results are filtered out, kept
+                    # so a future caller cannot reintroduce the divide by zero
+                    keyword_results = []
             
             # Merge results and track sources
             merged = {}
