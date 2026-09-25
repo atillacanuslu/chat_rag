@@ -456,6 +456,48 @@ Two machines, two roles. Retrieval is reported from the MacBook because the
 whole before and after sequence was measured there on one answering model.
 Answer accuracy is reported from the PC because llama3.2 cannot judge.
 
+### Before and after
+
+Machine B has a complete before and after, because both runs used a judge that
+works.
+
+| | Baseline `pc_baseline.xlsx` | Final `pc_e5_final.xlsx` |
+|---|---|---|
+| **Answer accuracy** | **21.9%** | **68.8%** |
+| Hit rate @5 | 23.3% | 76.7% |
+| MRR | 0.172 | 0.581 |
+| Crash rate | 0.0% | 0.0% |
+| Median latency | 18.0 s | 18.1 s |
+| p90 latency | 22.8 s | 21.8 s |
+| Median input tokens | 2,476 | 2,665 |
+
+Answer accuracy roughly tripled, from just over one question in five to just
+over two in three. Latency is unchanged, and the prompt grew by about 8%
+because each retrieved chunk now carries more content.
+
+Machine A shows the token side of the same changes, and the two reliability
+bugs that only appeared there.
+
+| | Baseline `mac_baseline_v2.xlsx` | Final `mac_e5_final.xlsx` |
+|---|---|---|
+| Hit rate @5 | 20.7% | 80.0% |
+| MRR | 0.119 | 0.596 |
+| Crash rate | 3.1% | 0.0% |
+| Queries with NaN rerank | 100% | 0.0% |
+| Mean input tokens | 3,379 | 2,278 |
+| Total tokens (in + out) | 118,730 | 87,169 |
+| Median latency | 26.9 s | 41.2 s |
+
+Total token usage fell by 27%, because the retrieved chunks are focused
+instead of padded with truncated filler.
+
+Latency on machine A got worse, and the reranker is the reason. In the
+baseline it returned NaN for every pair and the code fell straight through to
+a constant 0.5, so reranking cost almost nothing because it was not happening.
+Once it works it scores every candidate against the query, which is real
+compute. The baseline was faster because it was doing less. Machine B shows no
+such change, since the reranker was working there from the start.
+
 | | Machine A (MacBook, llama3.2) | Machine B (PC, qwen2.5:7b) |
 |---|---|---|
 | | `mac_e5_final.xlsx` | `pc_e5_final.xlsx` |
