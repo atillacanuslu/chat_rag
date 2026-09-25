@@ -511,11 +511,65 @@ Found and verified, left alone for time or scope.
 | fusion | Vector and BM25 score ranges are not comparable, so the configured 70/30 weights do not mean what they say. The smallest vector contribution always exceeds the largest BM25 one, which makes vector a membership gate rather than a ranking signal. |
 | `retrieve` | In hybrid mode only the LLM generated queries are searched. The user's own question reaches the searches only when query generation fails. |
 | `determine_search_strategy` | Costs one LLM call per question and every decision it makes is overridden by the caller, so its output is discarded. One of the three LLM calls per question does nothing. |
-| `generate_search_queries` | Temperature 0.6, so retrieval is not fully reproducible. Measured: identical results on 25 of 32 questions between two runs. |
-| `get_retrieval_context` | Document and Section are printed again although the chunk content already carries them as a header, and the relevance score is shown to the LLM. |
-| `generate_answer` | Nothing checks the answer against the retrieved chunks. |
 | Cross encoder | Min-max normalisation means the best candidate always scores 1.0 even when every raw score is negative, so the system cannot distinguish "these five are relevant" from "these five are the least bad". |
-| BM25 | English tokenizer, no stemming, and Python `lower()` handles Turkish `I` and `İ` incorrectly. |
 | PDF parser | Drops the hyphen but keeps the space on words split across line breaks, so `platform` becomes `plat form`. This quietly degrades BM25 on those tokens. |
-| `settings` | Roughly 15 settings are read from `.env` and never used by any code. |
 | Ingestion | Embeddings are generated one chunk at a time, and BM25 is rebuilt from the entire store after every document. |
+| Cross-language retrieval | All 3 English questions miss while the identical Turkish questions hit at ranks 1 to 3. A probe on the three paired questions showed the embedding ranks the correct chunk first for the English form, and the cross-encoder then scores it negative and buries it. `ms-marco-MiniLM-L-6-v2` is trained on English query against English passage, so it has no basis for scoring a Turkish passage. A multilingual cross-encoder is the fix. |
+
+---
+
+## 10. Reproducing this
+
+Everything runs locally. No paid APIs.
+
+**Setup**
+
+```bash
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+ollama pull qwen2.5:7b
+```
+
+Set `OLLAMA_MODEL` in `.env` to the model that should answer. This value is
+machine specific, so check it before running on a second machine.
+
+**Build the knowledge base**
+
+Start the app, create a knowledge base using `intfloat/multilingual-e5-small`
+as the embedding model, and upload `kkbfaaliyetraporu2024.pdf` to it. A correct
+build reports 485 chunks.
+
+Any change to the chunker or the embedding model needs a **new** knowledge
+base, because Chroma stores the vectors as they were written and the existing
+ones came from a different model.
+
+The knowledge base id is the key in `.knowledge_bases.json`, and also the
+folder name under `chroma_db/`.
+
+**Run the evaluation**
+
+```bash
+# retrieval and answers, one CSV per run
+python eval/run_eval.py --kb <kb_id> --judge-model qwen2.5:7b --out eval/results/run.csv
+
+# retrieval only, no answer call and no judge
+python eval/run_eval.py --kb <kb_id> --no-answer --out eval/results/retr.csv
+```
+
+**Read the results**
+
+```bash
+# table and summary in the terminal
+python eval/report.py eval/results/run.csv
+
+# also write the formatted workbook: Summary, Questions, Scores
+python eval/report.py eval/results/run.csv --xlsx eval/results/run.xlsx
+
+# compare two runs side by side
+python eval/report.py eval/results/before.csv eval/results/after.csv --xlsx cmp.xlsx
+```
+
+Only compare runs from the same machine with the same answering model. The
+pipeline generates its search query with an LLM call before retrieval runs, so
+changing the answering model changes what gets retrieved.
