@@ -126,7 +126,8 @@ def main():
     ap.add_argument("--questions", default="eval/questions.jsonl")
     ap.add_argument("--out", default="eval/results/run.csv")
     ap.add_argument("--top-k", type=int, default=5)
-    ap.add_argument("--method", default="hybrid", choices=["hybrid", "vector", "bm25"])
+    ap.add_argument("--method", default="hybrid", choices=["hybrid", "vector", "bm25", "auto"],
+                    help="'auto' passes None so the pipeline's strategy call picks the method")
     ap.add_argument("--judge-model", default=os.getenv("JUDGE_MODEL", "llama3.2:latest"),
                     help="keep this identical across every run")
     ap.add_argument("--no-answer", action="store_true",
@@ -137,6 +138,8 @@ def main():
                     help="also write a formatted workbook (defaults to the CSV path with .xlsx)")
     ap.add_argument("--list-kb", action="store_true")
     args = ap.parse_args()
+
+    method = None if args.method == "auto" else args.method
 
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -161,17 +164,23 @@ def main():
     # warm up: the first call loads models and builds BM25
     try:
         if args.no_answer:
-            pipeline.retrieve("isinma sorgusu", top_k=args.top_k, retrieval_method=args.method,
+            pipeline.retrieve("isinma sorgusu", top_k=args.top_k, retrieval_method=method,
                               use_reranking=True)
         else:
-            pipeline.query("isinma sorgusu", top_k=args.top_k, retrieval_method=args.method)
+            pipeline.query("isinma sorgusu", top_k=args.top_k, retrieval_method=method)
     except Exception:
         pass
 
     rows = []
     for q in questions:
         no_answer_q = q["type"] == "no_answer"
-        scored = bool(q.get("evidence")) and not no_answer_q
+        # evidence may be a single phrase or a list of accepted phrases. A fact is
+        # often stated in several places in the document, so pinning one wording
+        # undercounts retrieval: the system finds a different, equally valid
+        # statement of the same fact and it scores as a miss.
+        ev = q.get("evidence") or []
+        evidence_list = [ev] if isinstance(ev, str) else list(ev)
+        scored = bool(evidence_list) and not no_answer_q
         if has_usage:
             llm.reset_usage()
 
@@ -181,11 +190,11 @@ def main():
             if args.no_answer:
                 results, metadata = pipeline.retrieve(
                     query=q["question"], top_k=args.top_k,
-                    use_reranking=True, retrieval_method=args.method)
+                    use_reranking=True, retrieval_method=method)
             else:
                 out = pipeline.query(
                     question=q["question"], top_k=args.top_k,
-                    use_reranking=True, retrieval_method=args.method,
+                    use_reranking=True, retrieval_method=method,
                     temperature=0.3, max_tokens=500)
                 answer = out.get("answer", "")
                 metadata = out.get("metadata", {}) or {}
@@ -201,10 +210,14 @@ def main():
 
         # ---- check 1: string matching, no LLM
         rank = 0
+        matched_evidence = ""
         if scored and results:
             for i, r in enumerate(results, 1):
-                if contains(getattr(r, "content", None) or r.chunk.content, q["evidence"]):
+                text = getattr(r, "content", None) or r.chunk.content
+                hit = next((e for e in evidence_list if contains(text, e)), None)
+                if hit:
                     rank = i
+                    matched_evidence = hit
                     break
 
         final_scores = [r.score for r in results if hasattr(r, "score") and isinstance(r.score, (int, float))]
@@ -245,7 +258,8 @@ def main():
             "id": q["id"], "type": q["type"], "scored": int(scored),
             "question": q["question"],
             "expected": q.get("answer", ""),
-            "evidence": q.get("evidence", ""),
+            "evidence": " | ".join(evidence_list),
+            "matched_evidence": matched_evidence,
             "hit_final": int(rank > 0) if scored else "",
             "rank": rank, "rr": round(1 / rank, 4) if rank else 0.0,
             "correct": correct, "verdict": verdict,
